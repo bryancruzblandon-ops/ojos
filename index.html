@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tus Ojos ✨</title>
+  <title>Tus Ojos en las Estrellas 🌌✨</title>
   <style>
     * {
       margin: 0;
@@ -12,7 +12,7 @@
     }
 
     body {
-      background-color: #f8fafc;
+      background-color: #030712;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -20,35 +20,37 @@
       justify-content: center;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       overflow: hidden;
-      color: #0f172a;
+      color: #fff;
       touch-action: manipulation;
     }
 
     h1 {
       position: absolute;
-      top: 30px;
+      top: 35px;
       font-size: 1.3rem;
-      color: #1e293b;
+      color: #bae6fd;
+      text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
       text-align: center;
       padding: 0 15px;
       z-index: 10;
       pointer-events: none;
-      font-weight: 500;
-      letter-spacing: 0.5px;
+      font-weight: 300;
+      letter-spacing: 1px;
     }
 
     canvas {
       display: block;
       width: 100vw;
       height: 100vh;
-      background: #f8fafc;
+      background: radial-gradient(circle at center, #0f172a 0%, #030712 100%);
     }
 
     .instructions {
       position: absolute;
       bottom: 25px;
       font-size: 0.85rem;
-      color: #64748b;
+      color: #38bdf8;
+      opacity: 0.8;
       text-align: center;
       pointer-events: none;
       z-index: 10;
@@ -57,12 +59,12 @@
 </head>
 <body>
 
-  <h1>Hay miradas que no se olvidan 👁️✨</h1>
-  <canvas id="halftoneCanvas"></canvas>
+  <h1>Hay miradas que iluminan el cielo ✨✨</h1>
+  <canvas id="droneCanvas"></canvas>
   <div class="instructions">Toca 1 vez para guiñar • Toca 2 veces para cerrar ambos ojos</div>
 
   <script>
-    const canvas = document.getElementById('halftoneCanvas');
+    const canvas = document.getElementById('droneCanvas');
     const ctx = canvas.getContext('2d');
 
     let width, height;
@@ -73,14 +75,26 @@
     window.addEventListener('resize', resize);
     resize();
 
-    // Estados de interacción
+    // Variables de interacción
     let mouse = { x: width / 2, y: height / 2 };
     let isWinking = false;
     let isBothClosed = false;
     let clickTimer = null;
     let tapCount = 0;
 
-    // Seguimiento del ratón y touch
+    // Fondo de Estrellas Fijas
+    const stars = [];
+    for (let i = 0; i < 90; i++) {
+      stars.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        size: Math.random() * 1.5 + 0.5,
+        alpha: Math.random() * 0.8 + 0.2,
+        speed: Math.random() * 0.02 + 0.01
+      });
+    }
+
+    // Seguimiento del cursor / touch
     window.addEventListener('mousemove', (e) => {
       mouse.x = e.clientX;
       mouse.y = e.clientY;
@@ -93,19 +107,17 @@
       }
     });
 
-    // Manejo limpio de 1 toque vs 2 toques
+    // Control táctil de 1 toque (guiño) vs 2 toques (cerrar ambos)
     window.addEventListener('pointerdown', () => {
       tapCount++;
       if (tapCount === 1) {
         clickTimer = setTimeout(() => {
-          // Un solo toque: Guiña el ojo derecho
           isWinking = true;
           isBothClosed = false;
           setTimeout(() => { isWinking = false; }, 600);
           tapCount = 0;
         }, 250);
       } else if (tapCount === 2) {
-        // Doble toque: Cierra ambos ojos juntos
         clearTimeout(clickTimer);
         isBothClosed = true;
         isWinking = false;
@@ -114,45 +126,48 @@
       }
     });
 
-    // Puntos fijos de la matriz Halftone
-    class HalftoneDot {
+    // Drones de luz flotantes
+    class DroneParticle {
       constructor(baseX, baseY, type, isRightEye = false) {
         this.baseX = baseX;
         this.baseY = baseY;
+        this.x = width / 2 + baseX + (Math.random() - 0.5) * 160;
+        this.y = height / 2 + baseY + (Math.random() - 0.5) * 160;
         this.type = type; // 'brow', 'lash', 'lid', 'iris', 'pupil', 'glint'
         this.isRightEye = isRightEye;
 
-        // Tamaño y Color base según el elemento
-        if (type === 'pupil') {
-          this.baseRadius = 3.5;
-          this.color = '#090d16'; // Negro intenso
-        } else if (type === 'iris') {
-          this.baseRadius = 2.8;
-          this.color = '#0284c7'; // Azul celeste brillante
-        } else if (type === 'glint') {
-          this.baseRadius = 2.5;
-          this.color = '#ffffff'; // Destello blanco
-        } else if (type === 'brow') {
-          this.baseRadius = 2.2;
-          this.color = '#1e293b'; // Puntos oscuros ceja
-        } else if (type === 'lash') {
-          this.baseRadius = 2.5;
-          this.color = '#0f172a'; // Pestañas oscuras
-        } else {
-          this.baseRadius = 2.0;
-          this.color = '#334155'; // Párpados
-        }
+        this.flickerSpeed = Math.random() * 0.06 + 0.02;
+        this.flicker = Math.random() * Math.PI;
 
-        this.currentX = baseX;
-        this.currentY = baseY;
-        this.radius = this.baseRadius;
+        // Asignación de Colores y Brillos por zona
+        if (this.type === 'pupil') {
+          this.color = '#0284c7';
+          this.glow = '#0369a1';
+          this.size = 2.2;
+        } else if (this.type === 'iris') {
+          this.color = '#38bdf8'; // Únicamente los iris en Azul Celeste
+          this.glow = '#7dd3fc';
+          this.size = 2.0;
+        } else if (this.type === 'glint') {
+          this.color = '#ffffff'; // Destello blanco
+          this.glow = '#f0f9ff';
+          this.size = 2.5;
+        } else if (this.type === 'brow' || this.type === 'lash') {
+          this.color = '#334155'; // Pestañas y Cejas en todo grafito/oscuro
+          this.glow = '#1e293b';
+          this.size = 1.8;
+        } else {
+          this.color = '#94a3b8'; // Contorno del párpado
+          this.glow = '#64748b';
+          this.size = 1.5;
+        }
       }
 
       update() {
         let targetX = width / 2 + this.baseX;
         let targetY = height / 2 + this.baseY;
 
-        // Movimiento de pupila / iris azul con el cursor
+        // Movimiento de pupila / iris azul con el dedo o ratón
         if (this.type === 'pupil' || this.type === 'iris' || this.type === 'glint') {
           let dx = (mouse.x - width / 2) * 0.04;
           let dy = (mouse.y - height / 2) * 0.04;
@@ -160,98 +175,116 @@
           targetY += dy;
         }
 
-        // Cierre de ojos: Ambos o Guiño
+        // Animación de Cierre (Ambos o Guiño)
         let shouldClose = isBothClosed || (isWinking && this.isRightEye);
 
         if (shouldClose) {
           if (this.type !== 'brow') {
-            targetY = height / 2 + 10; // Todos los puntos se pliegan a la línea central
+            targetY = height / 2 + 10;
           }
         }
 
-        this.currentX += (targetX - this.currentX) * 0.15;
-        this.currentY += (targetY - this.currentY) * 0.15;
+        // Física fluida
+        this.x += (targetX - this.x) * 0.085;
+        this.y += (targetY - this.y) * 0.085;
+
+        // Flotación en el aire estilo dron
+        this.x += Math.sin(this.flicker) * 0.4;
+        this.y += Math.cos(this.flicker) * 0.4;
+        this.flicker += this.flickerSpeed;
       }
 
       draw() {
+        let alpha = 0.7 + Math.sin(this.flicker) * 0.3;
+        ctx.save();
+        ctx.globalAlpha = alpha;
         ctx.fillStyle = this.color;
+        ctx.shadowColor = this.glow;
+        ctx.shadowBlur = 8;
+
         ctx.beginPath();
-        ctx.arc(this.currentX, this.currentY, this.radius, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
       }
     }
 
-    const dots = [];
+    const particles = [];
 
-    function generateHalftoneEyes() {
-      dots.length = 0;
+    function generateDroneEyes() {
+      particles.length = 0;
       const eyeCenters = [-110, 110];
 
       eyeCenters.forEach((cx, index) => {
         const isRight = index === 1;
 
-        // 1. CEJAS (Puntos Negros/Gris Oscuro)
-        for (let x = -65; x <= 65; x += 6) {
+        // 1. Cejas oscuras bien arqueadas
+        for (let x = -65; x <= 65; x += 5) {
           let normX = x / 65;
           let y = -70 - (1 - normX * normX) * 16 + (x > 0 ? x * 0.1 : 0);
-          dots.push(new HalftoneDot(cx + x, y, 'brow', isRight));
-          dots.push(new HalftoneDot(cx + x, y + 4, 'brow', isRight));
+          particles.push(new DroneParticle(cx + x, y, 'brow', isRight));
+          particles.push(new DroneParticle(cx + x, y + 3, 'brow', isRight));
         }
 
-        // 2. PESTAÑAS Y PÁRPADO SUPERIOR (Puntos Negros densos)
-        for (let x = -60; x <= 60; x += 5) {
+        // 2. Pestañas y párpado superior
+        for (let x = -60; x <= 60; x += 4) {
           let normX = x / 60;
           let y = -12 - Math.cos(normX * Math.PI * 0.5) * 22;
-          dots.push(new HalftoneDot(cx + x, y, 'lash', isRight));
-          dots.push(new HalftoneDot(cx + x, y - 4, 'lash', isRight));
+          particles.push(new DroneParticle(cx + x, y, 'lash', isRight));
 
-          // Pestañas proyectadas hacia arriba
-          if (x % 10 === 0) {
-            dots.push(new HalftoneDot(cx + x * 1.1, y - 8, 'lash', isRight));
+          if (x % 8 === 0) {
+            particles.push(new DroneParticle(cx + x * 1.1, y - 6, 'lash', isRight));
           }
         }
 
-        // 3. PÁRPADO INFERIOR
-        for (let x = -50; x <= 50; x += 6) {
+        // 3. Párpado inferior
+        for (let x = -50; x <= 50; x += 5) {
           let normX = x / 50;
           let y = -4 + Math.cos(normX * Math.PI * 0.5) * 16;
-          dots.push(new HalftoneDot(cx + x, y, 'lid', isRight));
+          particles.push(new DroneParticle(cx + x, y, 'lid', isRight));
         }
 
-        // 4. IRIS (ÚNICAMENTE PUNTOS AZULES)
-        for (let r = 5; r <= 22; r += 4.5) {
+        // 4. Iris (ÚNICAMENTE DRONES AZULES)
+        for (let r = 4; r <= 22; r += 3.8) {
           for (let a = 0; a < Math.PI * 2; a += 0.35) {
             let rx = r * Math.cos(a);
             let ry = r * Math.sin(a);
-            // Corte para mantener la forma redonda dentro del párpado
-            if (Math.abs(rx) < 22) {
-              dots.push(new HalftoneDot(cx + rx, ry - 3, 'iris', isRight));
-            }
+            particles.push(new DroneParticle(cx + rx, ry - 3, 'iris', isRight));
           }
         }
 
-        // 5. PUPILA (Puntos Negros centrales)
-        for (let r = 0; r <= 8; r += 3.5) {
-          for (let a = 0; a < Math.PI * 2; a += 0.6) {
+        // 5. Pupila (Drones negros/azules oscuros)
+        for (let r = 0; r <= 8; r += 3) {
+          for (let a = 0; a < Math.PI * 2; a += 0.5) {
             let rx = r * Math.cos(a);
             let ry = r * Math.sin(a);
-            dots.push(new HalftoneDot(cx + rx, ry - 3, 'pupil', isRight));
+            particles.push(new DroneParticle(cx + rx, ry - 3, 'pupil', isRight));
           }
         }
 
-        // 6. DESTELLO (Puntos Blancos)
-        dots.push(new HalftoneDot(cx - 5, -8, 'glint', isRight));
+        // 6. Destello de Luz Blanca
+        particles.push(new DroneParticle(cx - 5, -8, 'glint', isRight));
       });
     }
 
-    generateHalftoneEyes();
+    generateDroneEyes();
 
     function animate() {
       ctx.clearRect(0, 0, width, height);
 
-      dots.forEach(dot => {
-        dot.update();
-        dot.draw();
+      // Dibujar estrellas de fondo
+      stars.forEach(s => {
+        s.alpha += Math.sin(Date.now() * s.speed) * 0.01;
+        ctx.fillStyle = `rgba(255, 255, 255, ${Math.abs(s.alpha)})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Dibujar drones
+      particles.forEach(p => {
+        p.update();
+        p.draw();
       });
 
       requestAnimationFrame(animate);
