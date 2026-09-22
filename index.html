@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tus Ojos en las Estrellas 🌌✨</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #030712;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+      color: #fff;
+      touch-action: manipulation;
+    }
+
+    h1 {
+      position: absolute;
+      top: 35px;
+      font-size: 1.3rem;
+      color: #bae6fd;
+      text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+      text-align: center;
+      padding: 0 15px;
+      z-index: 10;
+      pointer-events: none;
+      font-weight: 300;
+      letter-spacing: 1px;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at center, #081325 0%, #030712 100%);
+    }
+
+    .instructions {
+      position: absolute;
+      bottom: 25px;
+      font-size: 0.8rem;
+      color: #38bdf8;
+      opacity: 0.8;
+      text-align: center;
+      pointer-events: none;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Hay miradas que iluminan el cielo ✨✨</h1>
+  <canvas id="droneCanvas"></canvas>
+  <div class="instructions">Toca 1 vez para guiñar • Toca 2 veces para sonreír</div>
+
+  <script>
+    const canvas = document.getElementById('droneCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Variables de interacción
+    let mouse = { x: width / 2, y: height / 2 };
+    let isWinking = false;
+    let isSmiling = false;
+    let smileTimer = null;
+    let lastTap = 0;
+
+    // Seguimiento táctil y ratón
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    });
+
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 0) {
+        mouse.x = e.touches[0].clientX;
+        mouse.y = e.touches[0].clientY;
+      }
+    });
+
+    // Guiño y Sonrisa
+    window.addEventListener('pointerdown', (e) => {
+      const now = Date.now();
+      const timespan = now - lastTap;
+      
+      if (timespan < 300 && timespan > 0) {
+        // Doble toque -> Ojos achinados por sonrisa
+        isSmiling = true;
+        clearTimeout(smileTimer);
+        smileTimer = setTimeout(() => { isSmiling = false; }, 2200);
+      } else {
+        // Toque simple -> Guiño coqueto
+        isWinking = true;
+        setTimeout(() => { isWinking = false; }, 850);
+      }
+      lastTap = now;
+    });
+
+    class DroneParticle {
+      constructor(baseX, baseY, type, isRightEye = false) {
+        this.baseX = baseX;
+        this.baseY = baseY;
+        this.x = width / 2 + baseX + (Math.random() - 0.5) * 180;
+        this.y = height / 2 + baseY + (Math.random() - 0.5) * 180;
+        this.type = type; // 'brow', 'lashes', 'lid', 'iris', 'pupil', 'glint', 'cheek'
+        this.isRightEye = isRightEye;
+
+        this.size = Math.random() * 1.4 + 1.6;
+        this.flickerSpeed = Math.random() * 0.06 + 0.02;
+        this.flicker = Math.random() * Math.PI;
+
+        // Paleta de colores ajustada a la imagen (Azul celeste luminoso)
+        if (this.type === 'pupil') {
+          this.color = '#0284c7';
+          this.glow = '#0284c7';
+          this.size = 2.2;
+        } else if (this.type === 'iris') {
+          this.color = '#38bdf8';
+          this.glow = '#7dd3fc';
+          this.size = 1.9;
+        } else if (this.type === 'glint') {
+          this.color = '#ffffff';
+          this.glow = '#e0f2fe';
+          this.size = 2.4;
+        } else if (this.type === 'brow') {
+          this.color = '#93c5fd';
+          this.glow = '#3b82f6';
+          this.size = 1.8;
+        } else if (this.type === 'lashes') {
+          this.color = '#38bdf8';
+          this.glow = '#0284c7';
+          this.size = 1.5;
+        } else {
+          this.color = '#bae6fd';
+          this.glow = '#38bdf8';
+        }
+      }
+
+      update() {
+        let targetX = width / 2 + this.baseX;
+        let targetY = height / 2 + this.baseY;
+
+        // 1. Movimiento de irises, pupilas y brillo con la mirada
+        if (this.type === 'pupil' || this.type === 'iris' || this.type === 'glint') {
+          let dx = (mouse.x - width / 2) * 0.035;
+          let dy = (mouse.y - height / 2) * 0.035;
+          targetX += dx;
+          targetY += dy;
+        }
+
+        // 2. Animación de Guiño (Ojo derecho)
+        if (isWinking && this.isRightEye) {
+          if (this.type !== 'brow') {
+            targetY = height / 2 + 12; 
+          }
+        }
+
+        // 3. Animación de Sonrisa (Achinar ojos)
+        if (isSmiling) {
+          if (this.type === 'lid' || this.type === 'cheek' || this.type === 'iris' || this.type === 'pupil' || this.type === 'glint') {
+            if (this.baseY > -5) {
+              targetY -= 20; // Eleva pómulo e párpado inferior
+            } else if (this.baseY < -18 && (this.type === 'lid' || this.type === 'lashes')) {
+              targetY += 6; // Bajar ligeramente párpado superior
+            }
+          }
+        }
+
+        // Física fluida estilo dron
+        this.x += (targetX - this.x) * 0.085;
+        this.y += (targetY - this.y) * 0.085;
+
+        // Flotación en el aire
+        this.x += Math.sin(this.flicker) * 0.45;
+        this.y += Math.cos(this.flicker) * 0.45;
+        this.flicker += this.flickerSpeed;
+      }
+
+      draw() {
+        let alpha = 0.65 + Math.sin(this.flicker) * 0.35;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = this.color;
+        ctx.shadowColor = this.glow;
+        ctx.shadowBlur = 9;
+
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    const particles = [];
+
+    function generateEyesFromPhoto() {
+      particles.length = 0;
+      const eyeCenters = [-105, 105];
+
+      eyeCenters.forEach((cx, index) => {
+        const isRight = index === 1;
+
+        // A. Cejas con curva suave y natural (exactas a la imagen)
+        for (let x = -65; x <= 65; x += 4) {
+          let normX = x / 65;
+          let y = -70 - (1 - normX * normX) * 18 + (x > 0 ? x * 0.1 : 0);
+          particles.push(new DroneParticle(cx + x, y, 'brow', isRight));
+          particles.push(new DroneParticle(cx + x, y + 2, 'brow', isRight));
+        }
+
+        // B. Párpado superior y Pestañas estilizadas
+        for (let x = -60; x <= 60; x += 3) {
+          let normX = x / 60;
+          let y = -12 - Math.cos(normX * Math.PI * 0.5) * 22;
+          particles.push(new DroneParticle(cx + x, y, 'lid', isRight));
+
+          // Pestañas apuntando hacia afuera
+          if (x % 6 === 0) {
+            let lashX = x + (x * 0.15);
+            let lashY = y - 6;
+            particles.push(new DroneParticle(cx + lashX, lashY, 'lashes', isRight));
+          }
+        }
+
+        // C. Párpado inferior
+        for (let x = -55; x <= 55; x += 4) {
+          let normX = x / 55;
+          let y = -5 + Math.cos(normX * Math.PI * 0.5) * 16;
+          particles.push(new DroneParticle(cx + x, y, 'lid', isRight));
+        }
+
+        // D. Iris Azul Celeste Denso
+        for (let r = 4; r <= 22; r += 3.5) {
+          for (let a = 0; a < Math.PI * 2; a += 0.3) {
+            let rx = r * Math.cos(a);
+            let ry = r * Math.sin(a);
+            particles.push(new DroneParticle(cx + rx, ry - 3, 'iris', isRight));
+          }
+        }
+
+        // E. Pupila
+        for (let r = 0; r <= 8; r += 2.8) {
+          for (let a = 0; a < Math.PI * 2; a += 0.5) {
+            let rx = r * Math.cos(a);
+            let ry = r * Math.sin(a);
+            particles.push(new DroneParticle(cx + rx, ry - 3, 'pupil', isRight));
+          }
+        }
+
+        // F. Destello de Luz Blanca (Glint) en la pupila
+        particles.push(new DroneParticle(cx - 5, -8, 'glint', isRight));
+        particles.push(new DroneParticle(cx - 3, -6, 'glint', isRight));
+
+        // G. Línea de Pómulo para la Sonrisa
+        for (let x = -45; x <= 45; x += 7) {
+          let y = 28 + Math.abs(x) * 0.12;
+          particles.push(new DroneParticle(cx + x, y, 'cheek', isRight));
+        }
+      });
+    }
+
+    generateEyesFromPhoto();
+
+    function animate() {
+      ctx.clearRect(0, 0, width, height);
+
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
